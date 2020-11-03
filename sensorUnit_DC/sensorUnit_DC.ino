@@ -78,17 +78,16 @@ void setup(void) {
 }
 
 long lastMillis = 0;
-uint8_t j, result;
-uint16_t data[6];
 
 void loop(void) {
-
+  uint8_t j, result;
+  uint16_t data[6];
   //web handle
   server.handleClient();
 
   //meter handle
   long currentMillis = millis();
-  if (currentMillis - lastMillis > 1000)
+  if (currentMillis - lastMillis > 5000)
   {
     result = node.readInputRegisters(0x00, 8);
     if (result == node.ku8MBSuccess)
@@ -102,6 +101,8 @@ void loop(void) {
     } else {
       Serial.println("err");
     }
+
+
     lastMillis = currentMillis;
   }
 }
