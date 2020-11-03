@@ -4,7 +4,7 @@
 #include <WebServer.h>
 #include <ElegantOTA.h>
 #include "ModbusMaster.h"
-
+#include "DHTesp.h"
 
 #define MAX485_DE      23
 #define MAX485_RE_NEG  18
@@ -19,6 +19,7 @@ String webViewMsg = "Hi! ESP32.";
 
 WebServer server(80);
 ModbusMaster node;
+DHTesp dht;
 
 void preTransmission()
 {
@@ -37,6 +38,8 @@ void setup(void) {
   // Init in receive mode
   digitalWrite(MAX485_RE_NEG, 0);
   digitalWrite(MAX485_DE, 0);
+
+  dht.setup(19, DHTesp::DHT11);
 
   Serial.begin(115200);// Modbus communication runs at 115200 baud
   WiFi.mode(WIFI_STA);
@@ -102,6 +105,10 @@ void loop(void) {
     } else {
       Serial.println("err");
     }
+
+    TempAndHumidity newValues = dht.getTempAndHumidity();
+    Serial.println(" T:" + String(newValues.temperature) + " H:" + String(newValues.humidity));
+
     lastMillis = currentMillis;
   }
 }
