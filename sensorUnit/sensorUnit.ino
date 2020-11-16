@@ -5,6 +5,7 @@
 #include <ElegantOTA.h>
 #include "ModbusMaster.h"
 //#include "DHTesp.h"
+#include <HTTPClient.h>
 
 #define MAX485_DE      23
 #define MAX485_RE_NEG  18
@@ -16,6 +17,9 @@ const char* ssid = "true_home2G_9X2";
 const char* password = "FJdey62Y";
 
 String webViewMsg = "Hi! ESP32.";
+
+
+
 
 WebServer server(80);
 ModbusMaster node;
@@ -79,10 +83,15 @@ void setup(void) {
   node.preTransmission(preTransmission);
   node.postTransmission(postTransmission);
 }
-
+int lCnt = 0;
 long lastMillis = 0;
+long lastHttpMillis = 0;
 uint8_t j, result;
-uint16_t data[6];
+uint16_t dataValue[6];
+String V;
+String I;
+String P;
+String E;
 
 void loop(void) {
 
@@ -99,16 +108,49 @@ void loop(void) {
       Serial.println("ok");
       for (j = 0; j < 8; j++)
       {
-        data[j] = node.getResponseBuffer(j);
+        dataValue[j] = node.getResponseBuffer(j);
       }
-      webViewMsg = String(data[0] / 100); //volt
+      V=String((float)dataValue[0] / 100); //volt
+      I= String((float)dataValue[1] / 100); //current
+      P= String((float)((dataValue[3]<<8)|(dataValue[2])) / 10);
+      E= String((dataValue[5]<<8)|(dataValue[4]));
+      
+      webViewMsg = V+" "+I+" "+P+" "+E;
     } else {
       Serial.println("err");
     }
 
-//    TempAndHumidity newValues = dht.getTempAndHumidity();
-//    Serial.println(" T:" + String(newValues.temperature) + " H:" + String(newValues.humidity));
+
+
+    //    TempAndHumidity newValues = dht.getTempAndHumidity();
+    //    Serial.println(" T:" + String(newValues.temperature) + " H:" + String(newValues.humidity));
+
 
     lastMillis = currentMillis;
   }
+
+  currentMillis = millis();
+  if (currentMillis - lastHttpMillis > 10000)
+  {
+    if ((WiFi.status() == WL_CONNECTED)) { //Check the current connection status
+      HTTPClient http;
+      String httpAddr="http://192.168.1.58/getBatStatus?V="+V+"&I="+I+"&P="+P+"&E="+E;
+      http.begin(httpAddr);
+
+      int httpCode = http.GET();
+
+      if (httpCode > 0) { //Check for the returning code
+        String payload = http.getString();
+        Serial.println(httpCode);
+        Serial.println(payload);
+      } else {
+        Serial.println("Error on HTTP request");
+      }
+
+      http.end(); //Free the resources
+    }
+
+    lastHttpMillis = currentMillis;
+  }
+
 }
