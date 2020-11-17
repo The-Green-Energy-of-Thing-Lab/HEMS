@@ -4,7 +4,7 @@
 #include <WebServer.h>
 #include <ElegantOTA.h>
 #include "ModbusMaster.h"
-//#include "DHTesp.h"
+#include "DHTesp.h"
 #include <HTTPClient.h>
 
 #define MAX485_DE      23
@@ -18,12 +18,9 @@ const char* password = "FJdey62Y";
 
 String webViewMsg = "Hi! ESP32.";
 
-
-
-
 WebServer server(80);
 ModbusMaster node;
-//DHTesp dht;
+DHTesp dht;
 
 void preTransmission()
 {
@@ -43,7 +40,7 @@ void setup(void) {
   digitalWrite(MAX485_RE_NEG, 0);
   digitalWrite(MAX485_DE, 0);
 
-  //dht.setup(19, DHTesp::DHT11);
+  dht.setup(19, DHTesp::DHT11);
 
   Serial.begin(115200);// Modbus communication runs at 115200 baud
   WiFi.mode(WIFI_STA);
@@ -83,15 +80,18 @@ void setup(void) {
   node.preTransmission(preTransmission);
   node.postTransmission(postTransmission);
 }
+
 int lCnt = 0;
 long lastMillis = 0;
 long lastHttpMillis = 0;
+long lastDhtMillis = 0;
 uint8_t j, result;
 uint16_t dataValue[6];
 String V;
 String I;
 String P;
 String E;
+String TH;
 
 void loop(void) {
 
@@ -110,31 +110,29 @@ void loop(void) {
       {
         dataValue[j] = node.getResponseBuffer(j);
       }
-      V=String((float)dataValue[0] / 100); //volt
-      I= String((float)dataValue[1] / 100); //current
-      P= String((float)((dataValue[3]<<8)|(dataValue[2])) / 10);
-      E= String((dataValue[5]<<8)|(dataValue[4]));
-      
-      webViewMsg = V+" "+I+" "+P+" "+E;
+      V = String((float)dataValue[0] / 100); //volt
+      I = String((float)dataValue[1] / 100); //current
+      P = String((float)((dataValue[3] << 8) | (dataValue[2])) / 10);
+      E = String((dataValue[5] << 8) | (dataValue[4]));
+
+      webViewMsg = V + " " + I + " " + P + " " + E;
     } else {
       Serial.println("err");
     }
 
-
-
-    //    TempAndHumidity newValues = dht.getTempAndHumidity();
-    //    Serial.println(" T:" + String(newValues.temperature) + " H:" + String(newValues.humidity));
-
+    TempAndHumidity newValues = dht.getTempAndHumidity();
+    TH = "T=" + String(newValues.temperature) + "&H=" + String(newValues.humidity);
 
     lastMillis = currentMillis;
   }
 
+  //http get batt
   currentMillis = millis();
   if (currentMillis - lastHttpMillis > 10000)
   {
     if ((WiFi.status() == WL_CONNECTED)) { //Check the current connection status
       HTTPClient http;
-      String httpAddr="http://192.168.1.58/getBatStatus?V="+V+"&I="+I+"&P="+P+"&E="+E;
+      String httpAddr = "http://192.168.1.34/getBatStatus?V=" + V + "&I=" + I + "&P=" + P + "&E=" + E;
       http.begin(httpAddr);
 
       int httpCode = http.GET();
@@ -153,4 +151,28 @@ void loop(void) {
     lastHttpMillis = currentMillis;
   }
 
+  //http get weather
+  currentMillis = millis();
+  if (currentMillis - lastDhtMillis > 30000)
+  {
+    if ((WiFi.status() == WL_CONNECTED)) { //Check the current connection status
+      HTTPClient http;
+      String httpAddr = "http://192.168.1.34/getWeather?" + TH;
+      http.begin(httpAddr);
+
+      int httpCode = http.GET();
+
+      if (httpCode > 0) { //Check for the returning code
+        String payload = http.getString();
+        Serial.println(httpCode);
+        Serial.println(payload);
+      } else {
+        Serial.println("Error on HTTP request");
+      }
+
+      http.end(); //Free the resources
+    }
+
+    lastDhtMillis = currentMillis;
+  }
 }
