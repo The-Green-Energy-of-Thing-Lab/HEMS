@@ -7,6 +7,10 @@
 #include "DHTesp.h"
 #include <HTTPClient.h>
 
+#include <Wire.h>               // Only needed for Arduino 1.6.5 and earlier
+#include "SSD1306Wire.h"        // legacy: #include "SSD1306.h"
+
+
 #define MAX485_DE      23
 #define MAX485_RE_NEG  18
 #define Slave_ID       1
@@ -21,6 +25,9 @@ String webViewMsg = "Hi! ESP32.";
 WebServer server(80);
 ModbusMaster node;
 DHTesp dht;
+SSD1306Wire display(0x3c, 4, 15);
+
+void drawTextAlignmentDemo();
 
 void preTransmission()
 {
@@ -79,6 +86,10 @@ void setup(void) {
   // Callbacks allow us to configure the RS485 transceiver correctly
   node.preTransmission(preTransmission);
   node.postTransmission(postTransmission);
+
+  display.init();
+  display.flipScreenVertically();
+  display.setFont(ArialMT_Plain_10);
 }
 
 int lCnt = 0;
@@ -122,6 +133,8 @@ void loop(void) {
 
     TempAndHumidity newValues = dht.getTempAndHumidity();
     TH = "T=" + String(newValues.temperature) + "&H=" + String(newValues.humidity);
+
+    drawTextAlignmentDemo();
 
     lastMillis = currentMillis;
   }
@@ -175,4 +188,21 @@ void loop(void) {
 
     lastDhtMillis = currentMillis;
   }
+}
+void drawTextAlignmentDemo() {
+  // Text alignment demo
+  display.setFont(ArialMT_Plain_10);
+
+  // The coordinates define the left starting point of the text
+  display.setTextAlignment(TEXT_ALIGN_LEFT);
+  display.drawString(0, 10, "Left aligned (0,10)");
+
+  // The coordinates define the center of the text
+  display.setTextAlignment(TEXT_ALIGN_CENTER);
+  display.drawString(64, 22, "Center aligned (64,22)");
+
+  // The coordinates define the right end of the text
+  display.setTextAlignment(TEXT_ALIGN_RIGHT);
+  display.drawString(128, 33, "Right aligned (128,33)");
+  display.display();
 }
