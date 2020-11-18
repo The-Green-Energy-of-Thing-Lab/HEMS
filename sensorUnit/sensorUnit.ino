@@ -28,11 +28,11 @@ long lastHttpMillis = 0;
 long lastDhtMillis = 0;
 uint8_t j, result;
 uint16_t dataValue[6];
-String V;
-String I;
-String P;
-String E;
-String TH;
+String V="0.0";
+String I="0.0";
+String P="0.0";
+String E="0.0";
+String TH="T=0.0&H=0.0";
 
 WebServer server(80);
 ModbusMaster node;
