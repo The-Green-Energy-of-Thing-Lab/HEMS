@@ -22,6 +22,18 @@ const char* password = "FJdey62Y";
 
 String webViewMsg = "Hi! ESP32.";
 
+int lCnt = 0;
+long lastMillis = 0;
+long lastHttpMillis = 0;
+long lastDhtMillis = 0;
+uint8_t j, result;
+uint16_t dataValue[6];
+String V;
+String I;
+String P;
+String E;
+String TH;
+
 WebServer server(80);
 ModbusMaster node;
 DHTesp dht;
@@ -89,20 +101,8 @@ void setup(void) {
 
   display.init();
   display.flipScreenVertically();
-  display.setFont(ArialMT_Plain_10);
 }
 
-int lCnt = 0;
-long lastMillis = 0;
-long lastHttpMillis = 0;
-long lastDhtMillis = 0;
-uint8_t j, result;
-uint16_t dataValue[6];
-String V;
-String I;
-String P;
-String E;
-String TH;
 
 void loop(void) {
 
@@ -191,7 +191,7 @@ void loop(void) {
 }
 void drawTextAlignmentDemo() {
   // Text alignment demo
-  display.setFont(ArialMT_Plain_10);
+  display.setFont(ArialMT_Plain_16);
 
   // The coordinates define the left starting point of the text
   display.setTextAlignment(TEXT_ALIGN_LEFT);
